@@ -9,6 +9,7 @@ import static org.fcrepo.services.PathService.OBJECT_PATH;
 
 import java.io.IOException;
 
+import javax.inject.Named;
 import javax.jcr.LoginException;
 import javax.jcr.NamespaceRegistry;
 import javax.jcr.Repository;
@@ -36,8 +37,8 @@ import com.google.common.collect.ImmutableMap.Builder;
  * @author cabeer
  * @author ajs6f
  */
-
-@Path("")
+@Named
+@Path("/rest")
 public class FedoraRepository extends AbstractResource {
 
     private static final Logger logger = LoggerFactory

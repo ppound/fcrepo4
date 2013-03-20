@@ -30,6 +30,7 @@ public class DatastreamIT extends AbstractIT {
 
     @Test
     public void testLabel() throws Exception {
+    	System.out.println("INIT FOR testLABEL");
         Session session = repo.login();
         createObjectNode(session, "testDatastreamObject");
         Node dsNode =

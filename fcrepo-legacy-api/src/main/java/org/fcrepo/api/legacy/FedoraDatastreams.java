@@ -1,4 +1,3 @@
-
 package org.fcrepo.api.legacy;
 
 import static com.google.common.collect.ImmutableSet.builder;
@@ -10,8 +9,8 @@ import static javax.ws.rs.core.Response.created;
 import static javax.ws.rs.core.Response.ok;
 import static org.fcrepo.api.legacy.FedoraObjects.getObjectSize;
 import static org.fcrepo.jaxb.responses.management.DatastreamProfile.convertDateToXSDString;
-import static org.fcrepo.jaxb.responses.management.DatastreamProfile.DatastreamStates.A;
 import static org.fcrepo.jaxb.responses.management.DatastreamProfile.DatastreamControlGroup.M;
+import static org.fcrepo.jaxb.responses.management.DatastreamProfile.DatastreamStates.A;
 import static org.fcrepo.services.DatastreamService.createDatastreamNode;
 import static org.fcrepo.services.ObjectService.getObjectNode;
 import static org.fcrepo.services.PathService.getDatastreamJcrNodePath;
@@ -25,7 +24,9 @@ import java.net.URI;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map.Entry;
 
+import javax.inject.Named;
 import javax.jcr.Node;
 import javax.jcr.NodeIterator;
 import javax.jcr.PathNotFoundException;
@@ -45,6 +46,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.cxf.jaxrs.ext.multipart.Attachment;
 import org.apache.cxf.jaxrs.ext.multipart.Multipart;
 import org.apache.cxf.jaxrs.ext.multipart.MultipartBody;
@@ -56,463 +58,443 @@ import org.fcrepo.jaxb.responses.access.ObjectDatastreams.DatastreamElement;
 import org.fcrepo.jaxb.responses.management.DatastreamHistory;
 import org.fcrepo.jaxb.responses.management.DatastreamProfile;
 import org.fcrepo.services.DatastreamService;
+import org.jboss.resteasy.plugins.providers.multipart.InputPart;
+import org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataInput;
+import org.jboss.resteasy.plugins.providers.multipart.MultipartInput;
 import org.modeshape.jcr.api.Binary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableSet.Builder;
 
-@Path("/objects/{pid}/datastreams")
+@Named
+@Path("/rest/objects/{pid}/datastreams")
 public class FedoraDatastreams extends AbstractResource {
 
-    final private Logger logger = LoggerFactory
-            .getLogger(FedoraDatastreams.class);
+	final private Logger logger = LoggerFactory
+			.getLogger(FedoraDatastreams.class);
 
-    /**
-     * Returns a list of datastreams for the object
-     *
-     * @param pid
-     *            persistent identifier of the digital object
-     * @return the list of datastreams
-     * @throws RepositoryException
-     * @throws IOException
-     * @throws TemplateException
-     */
+	/**
+	 * Returns a list of datastreams for the object
+	 * 
+	 * @param pid
+	 *            persistent identifier of the digital object
+	 * @return the list of datastreams
+	 * @throws RepositoryException
+	 * @throws IOException
+	 * @throws TemplateException
+	 */
 
-    @GET
-    @Path("/")
-    @Produces({TEXT_XML, APPLICATION_JSON})
-    public ObjectDatastreams getDatastreams(@PathParam("pid")
-    final String pid) throws RepositoryException, IOException {
+	@GET
+	@Path("/")
+	@Produces({ TEXT_XML, APPLICATION_JSON })
+	public ObjectDatastreams getDatastreams(@PathParam("pid") final String pid) throws RepositoryException, IOException {
+		logger.debug("trying to fetch datastreams fo pid " + pid);
 
-        final ObjectDatastreams objectDatastreams = new ObjectDatastreams();
-        final Builder<DatastreamElement> datastreams = builder();
+		final ObjectDatastreams objectDatastreams = new ObjectDatastreams();
+		final Builder<DatastreamElement> datastreams = builder();
 
-        NodeIterator i = getObjectNode(pid).getNodes();
-        while (i.hasNext()) {
-            final Node ds = i.nextNode();
-            datastreams.add(new DatastreamElement(ds.getName(), ds.getName(),
-                    getDSMimeType(ds)));
-        }
-        objectDatastreams.datastreams = datastreams.build();
-        return objectDatastreams;
+		NodeIterator i = getObjectNode(pid).getNodes();
+		while (i.hasNext()) {
+			final Node ds = i.nextNode();
+			datastreams.add(new DatastreamElement(ds.getName(), ds.getName(),
+					getDSMimeType(ds)));
+		}
+		objectDatastreams.datastreams = datastreams.build();
+		return objectDatastreams;
 
-    }
+	}
 
-    @POST
-    @Path("/")
-    public Response addDatastreams(@PathParam("pid")
-    final String pid, final List<Attachment> attachmentList)
-            throws RepositoryException, IOException, InvalidChecksumException {
+	@POST
+	@Path("/")
+	public Response addDatastreams(@PathParam("pid") final String pid, MultipartFormDataInput multipart) throws RepositoryException,
+			IOException, InvalidChecksumException {
+		final Session session = repo.login();
+		InputStream src = null;
+		try{
+			long oldObjectSize = getObjectSize(session.getNode(getObjectJcrNodePath(pid)));
+			for (Entry<String,List<InputPart>> parts : multipart.getFormDataMap().entrySet()){
+				final String dsid = parts.getKey();
+				final String dsPath = getDatastreamJcrNodePath(pid, dsid);
+				src = parts.getValue().get(0).getBody(InputStream.class,null);
+				createDatastreamNode(session, dsPath, parts.getValue().get(0).getMediaType().toString(), src);
+			}
+			session.save();
+			
+			/*
+			 * we save before updating the repo size because the act of persisting session state creates new
+			 * system-curated nodes and properties which contribute to the footprint of this resource
+			 */
+			updateRepositorySize(getObjectSize(session.getNode(getObjectJcrNodePath(pid))) - oldObjectSize, session);
+			// now we save again to persist the repo size
+			session.save();
+			
+		}finally{
+			IOUtils.closeQuietly(src);
+			session.logout();
+		}
+		return created(uriInfo.getAbsolutePath()).build();
+	}
 
-        final Session session = repo.login();
-        try {
-            Long oldObjectSize =
-                    getObjectSize(session.getNode(getObjectJcrNodePath(pid)));
+	@GET
+	@Path("/__content__")
+	@Produces("multipart/mixed")
+	public MultipartBody getDatastreamsContents(@PathParam("pid") final String pid, @QueryParam("dsid") List<String> dsids)
+			throws RepositoryException, IOException {
 
-            for (final Attachment a : attachmentList) {
-                final String dsid =
-                        a.getContentDisposition().getParameter("name");
-                final String dsPath = getDatastreamJcrNodePath(pid, dsid);
-                createDatastreamNode(session, dsPath, a.getDataHandler()
-                        .getContentType(), a.getDataHandler().getInputStream());
+		final Session session = repo.login();
 
-            }
-            session.save();
+		if (dsids.isEmpty()) {
+			NodeIterator ni = getObjectNode(pid).getNodes();
+			while (ni.hasNext()) {
+				dsids.add(ni.nextNode().getName());
+			}
+		}
 
-            /*
-             * we save before updating the repo size because the act of
-             * persisting session state creates new system-curated nodes and
-             * properties which contribute to the footprint of this resource
-             */
-            updateRepositorySize(getObjectSize(session
-                    .getNode(getObjectJcrNodePath(pid))) -
-                    oldObjectSize, session);
-            // now we save again to persist the repo size
-            session.save();
-        } finally {
-            session.logout();
-        }
+		List<Attachment> atts = new LinkedList<Attachment>();
+		try {
+			Iterator<String> i = dsids.iterator();
+			while (i.hasNext()) {
+				final String dsid = i.next();
 
-        return created(uriInfo.getAbsolutePath()).build();
-    }
+				try {
+					final Datastream ds =
+							DatastreamService.getDatastream(pid, dsid);
+					atts.add(new Attachment(ds.getNode().getName(), ds
+							.getMimeType(), ds.getContent()));
+				} catch (PathNotFoundException e) {
 
-    @GET
-    @Path("/__content__")
-    @Produces("multipart/mixed")
-    public MultipartBody getDatastreamsContents(@PathParam("pid")
-    final String pid, @QueryParam("dsid")
-    List<String> dsids) throws RepositoryException, IOException {
+				}
+			}
+		} finally {
+			session.logout();
+		}
 
-        final Session session = repo.login();
+		return new MultipartBody(atts, true);
+	}
 
-        if (dsids.isEmpty()) {
-            NodeIterator ni = getObjectNode(pid).getNodes();
-            while (ni.hasNext()) {
-                dsids.add(ni.nextNode().getName());
-            }
-        }
+	/**
+	 * Create a new datastream
+	 * 
+	 * @param pid
+	 *            persistent identifier of the digital object
+	 * @param dsid
+	 *            datastream identifier
+	 * @param contentType
+	 *            Content-Type header
+	 * @param requestBodyStream
+	 *            Binary blob
+	 * @return 201 Created
+	 * @throws RepositoryException
+	 * @throws IOException
+	 * @throws InvalidChecksumException
+	 */
+	@POST
+	@Path("/{dsid}")
+	public Response addDatastream(@PathParam("pid") final String pid, @PathParam("dsid") final String dsid,
+			@HeaderParam("Content-Type") MediaType contentType, InputStream requestBodyStream)
+			throws RepositoryException, IOException, InvalidChecksumException {
+		final Session session = repo.login();
 
-        List<Attachment> atts = new LinkedList<Attachment>();
-        try {
-            Iterator<String> i = dsids.iterator();
-            while (i.hasNext()) {
-                final String dsid = i.next();
+		contentType =
+				contentType != null ? contentType
+						: APPLICATION_OCTET_STREAM_TYPE;
+		String dspath = getDatastreamJcrNodePath(pid, dsid);
 
-                try {
-                    final Datastream ds =
-                            DatastreamService.getDatastream(pid, dsid);
-                    atts.add(new Attachment(ds.getNode().getName(), ds
-                            .getMimeType(), ds.getContent()));
-                } catch (PathNotFoundException e) {
+		if (!session.nodeExists(dspath)) {
+			return created(
+					addDatastreamNode(pid, dspath, contentType,
+							requestBodyStream, session)).build();
+		} else {
+			session.getNode(dspath).remove();
+			session.save();
+			return created(
+					addDatastreamNode(pid, dspath, contentType,
+							requestBodyStream, session)).build();
+		}
 
-                }
-            }
-        } finally {
-            session.logout();
-        }
+	}
 
-        return new MultipartBody(atts, true);
-    }
+	/**
+	 * Create a new datastream from a multipart/form-data request
+	 * 
+	 * @param pid
+	 *            persistent identifier of the digital object
+	 * @param dsid
+	 *            datastream identifier
+	 * @param contentType
+	 *            Content-Type header
+	 * @param file
+	 *            Binary blob
+	 * @return 201 Created
+	 * @throws RepositoryException
+	 * @throws IOException
+	 * @throws InvalidChecksumException
+	 */
+	@POST
+	@Consumes("multipart/form-data")
+	@Path("/{dsid}")
+	public Response addDatastream(@PathParam("pid") final String pid, @PathParam("dsid") final String dsid,
+			@HeaderParam("Content-Type") MediaType contentType, @Multipart("file") Attachment file) throws RepositoryException,
+			IOException, InvalidChecksumException {
+		return addDatastream(pid, dsid, file.getContentType(), file
+				.getDataHandler().getInputStream());
+	}
 
-    /**
-     * Create a new datastream
-     *
-     * @param pid
-     *            persistent identifier of the digital object
-     * @param dsid
-     *            datastream identifier
-     * @param contentType
-     *            Content-Type header
-     * @param requestBodyStream
-     *            Binary blob
-     * @return 201 Created
-     * @throws RepositoryException
-     * @throws IOException
-     * @throws InvalidChecksumException
-     */
-    @POST
-    @Path("/{dsid}")
-    public Response addDatastream(@PathParam("pid")
-    final String pid, @PathParam("dsid")
-    final String dsid, @HeaderParam("Content-Type")
-    MediaType contentType, InputStream requestBodyStream)
-            throws RepositoryException, IOException, InvalidChecksumException {
-        final Session session = repo.login();
+	/**
+	 * Modify an existing datastream's content
+	 * 
+	 * @param pid
+	 *            persistent identifier of the digital object
+	 * @param dsid
+	 *            datastream identifier
+	 * @param contentType
+	 *            Content-Type header
+	 * @param requestBodyStream
+	 *            Binary blob
+	 * @return 201 Created
+	 * @throws RepositoryException
+	 * @throws IOException
+	 * @throws InvalidChecksumException
+	 */
+	@PUT
+	@Path("/{dsid}")
+	public Response modifyDatastream(@PathParam("pid") final String pid, @PathParam("dsid") final String dsid,
+			@HeaderParam("Content-Type") MediaType contentType, InputStream requestBodyStream)
+			throws RepositoryException, IOException, InvalidChecksumException {
+		final Session session = repo.login();
+		contentType =
+				contentType != null ? contentType
+						: APPLICATION_OCTET_STREAM_TYPE;
+		String dspath = getDatastreamJcrNodePath(pid, dsid);
 
-        contentType =
-                contentType != null ? contentType
-                        : APPLICATION_OCTET_STREAM_TYPE;
-        String dspath = getDatastreamJcrNodePath(pid, dsid);
+		return created(
+				addDatastreamNode(pid, dspath, contentType, requestBodyStream,
+						session)).build();
 
-        if (!session.nodeExists(dspath)) {
-            return created(
-                    addDatastreamNode(pid, dspath, contentType,
-                            requestBodyStream, session)).build();
-        } else {
-            session.getNode(dspath).remove();
-            session.save();
-            return created(
-                    addDatastreamNode(pid, dspath, contentType,
-                            requestBodyStream, session)).build();
-        }
+	}
 
-    }
+	/**
+	 * Modify an existing datastream's content
+	 * 
+	 * @param pid
+	 *            persistent identifier of the digital object
+	 * @param dsid
+	 *            datastream identifier
+	 * @param contentType
+	 *            Content-Type header
+	 * @param file
+	 *            Binary blob
+	 * @return 201 Created
+	 * @throws RepositoryException
+	 * @throws IOException
+	 * @throws InvalidChecksumException
+	 */
+	@PUT
+	@Consumes("multipart/form-data")
+	@Path("/{dsid}")
+	public Response modifyDatastream(@PathParam("pid") final String pid, @PathParam("dsid") final String dsid,
+			@HeaderParam("Content-Type") MediaType contentType, @Multipart("file") Attachment file) throws RepositoryException,
+			IOException, InvalidChecksumException {
 
-    /**
-     * Create a new datastream from a multipart/form-data request
-     *
-     * @param pid
-     *            persistent identifier of the digital object
-     * @param dsid
-     *            datastream identifier
-     * @param contentType
-     *            Content-Type header
-     * @param file
-     *            Binary blob
-     * @return 201 Created
-     * @throws RepositoryException
-     * @throws IOException
-     * @throws InvalidChecksumException
-     */
-    @POST
-    @Consumes("multipart/form-data")
-    @Path("/{dsid}")
-    public Response addDatastream(@PathParam("pid")
-    final String pid, @PathParam("dsid")
-    final String dsid, @HeaderParam("Content-Type")
-    MediaType contentType, @Multipart("file")
-    Attachment file) throws RepositoryException, IOException, InvalidChecksumException {
-        return addDatastream(pid, dsid, file.getContentType(), file
-                .getDataHandler().getInputStream());
-    }
+		return modifyDatastream(pid, dsid, file.getContentType(), file
+				.getDataHandler().getInputStream());
 
-    /**
-     * Modify an existing datastream's content
-     *
-     * @param pid
-     *            persistent identifier of the digital object
-     * @param dsid
-     *            datastream identifier
-     * @param contentType
-     *            Content-Type header
-     * @param requestBodyStream
-     *            Binary blob
-     * @return 201 Created
-     * @throws RepositoryException
-     * @throws IOException
-     * @throws InvalidChecksumException
-     */
-    @PUT
-    @Path("/{dsid}")
-    public Response modifyDatastream(@PathParam("pid")
-    final String pid, @PathParam("dsid")
-    final String dsid, @HeaderParam("Content-Type")
-    MediaType contentType, InputStream requestBodyStream)
-            throws RepositoryException, IOException, InvalidChecksumException {
-        final Session session = repo.login();
-        contentType =
-                contentType != null ? contentType
-                        : APPLICATION_OCTET_STREAM_TYPE;
-        String dspath = getDatastreamJcrNodePath(pid, dsid);
+	}
 
-        return created(
-                addDatastreamNode(pid, dspath, contentType, requestBodyStream,
-                        session)).build();
+	private URI addDatastreamNode(final String pid, final String dsPath,
+			final MediaType contentType, final InputStream requestBodyStream,
+			final Session session) throws RepositoryException, IOException, InvalidChecksumException {
 
-    }
+		Long oldObjectSize =
+				getObjectSize(session.getNode(getObjectJcrNodePath(pid)));
+		logger.debug("Attempting to add datastream node at path: " + dsPath);
+		try {
+			createDatastreamNode(session, dsPath, contentType.toString(),
+					requestBodyStream);
+			boolean created = session.nodeExists(dsPath);
+			session.save();
+			if (created) {
+				/*
+				 * we save before updating the repo size because the act of persisting session state creates new
+				 * system-curated nodes and properties which contribute to the footprint of this resource
+				 */
+				updateRepositorySize(getObjectSize(session
+						.getNode(getObjectJcrNodePath(pid))) -
+						oldObjectSize, session);
+				// now we save again to persist the repo size
+				session.save();
+			}
+		} finally {
+			session.logout();
+		}
+		logger.debug("Finished adding datastream node at path: " + dsPath);
+		return uriInfo.getAbsolutePath();
+	}
 
-    /**
-     * Modify an existing datastream's content
-     *
-     * @param pid
-     *            persistent identifier of the digital object
-     * @param dsid
-     *            datastream identifier
-     * @param contentType
-     *            Content-Type header
-     * @param file
-     *            Binary blob
-     * @return 201 Created
-     * @throws RepositoryException
-     * @throws IOException
-     * @throws InvalidChecksumException
-     */
-    @PUT
-    @Consumes("multipart/form-data")
-    @Path("/{dsid}")
-    public Response modifyDatastream(@PathParam("pid")
-    final String pid, @PathParam("dsid")
-    final String dsid, @HeaderParam("Content-Type")
-    MediaType contentType, @Multipart("file")
-    Attachment file) throws RepositoryException, IOException, InvalidChecksumException {
+	/**
+	 * Get the datastream profile of a datastream
+	 * 
+	 * @param pid
+	 *            persistent identifier of the digital object
+	 * @param dsid
+	 *            datastream identifier
+	 * @return 200
+	 * @throws RepositoryException
+	 * @throws IOException
+	 * @throws TemplateException
+	 */
+	@GET
+	@Path("/{dsid}")
+	@Produces({ TEXT_XML, APPLICATION_JSON })
+	public DatastreamProfile getDatastream(@PathParam("pid") final String pid, @PathParam("dsid") final String dsId)
+			throws RepositoryException, IOException {
+		logger.trace("Executing getDatastream() with dsId: " + dsId);
+		Datastream ds = DatastreamService.getDatastream(pid, dsId);
+		logger.debug("Retrieved dsNode: " + ds.getNode().getName());
+		return getDSProfile(ds);
 
-        return modifyDatastream(pid, dsid, file.getContentType(), file
-                .getDataHandler().getInputStream());
+	}
 
-    }
+	/**
+	 * Get the binary content of a datastream
+	 * 
+	 * @param pid
+	 *            persistent identifier of the digital object
+	 * @param dsid
+	 *            datastream identifier
+	 * @return Binary blob
+	 * @throws RepositoryException
+	 */
+	@GET
+	@Path("/{dsid}/content")
+	public Response getDatastreamContent(@PathParam("pid") final String pid, @PathParam("dsid") final String dsid)
+			throws RepositoryException {
 
-    private URI addDatastreamNode(final String pid, final String dsPath,
-            final MediaType contentType, final InputStream requestBodyStream,
-            final Session session) throws RepositoryException, IOException, InvalidChecksumException {
+		final Datastream ds = DatastreamService.getDatastream(pid, dsid);
+		return ok(ds.getContent(), ds.getMimeType()).build();
+	}
 
-        Long oldObjectSize =
-                getObjectSize(session.getNode(getObjectJcrNodePath(pid)));
-        logger.debug("Attempting to add datastream node at path: " + dsPath);
-        try {
-            createDatastreamNode(session, dsPath, contentType.toString(),
-                    requestBodyStream);
-            boolean created = session.nodeExists(dsPath);
-            session.save();
-            if (created) {
-                /*
-                 * we save before updating the repo size because the act of
-                 * persisting session state creates new system-curated nodes and
-                 * properties which contribute to the footprint of this resource
-                 */
-                updateRepositorySize(getObjectSize(session
-                        .getNode(getObjectJcrNodePath(pid))) -
-                        oldObjectSize, session);
-                // now we save again to persist the repo size
-                session.save();
-            }
-        } finally {
-            session.logout();
-        }
-        logger.debug("Finished adding datastream node at path: " + dsPath);
-        return uriInfo.getAbsolutePath();
-    }
+	/**
+	 * Get previous version information for this datastream
+	 * 
+	 * @param pid
+	 *            persistent identifier of the digital object
+	 * @param dsId
+	 *            datastream identifier
+	 * @return 200
+	 * @throws RepositoryException
+	 * @throws IOException
+	 * @throws TemplateException
+	 */
+	@GET
+	@Path("/{dsid}/versions")
+	@Produces({ TEXT_XML, APPLICATION_JSON })
+	// TODO implement this after deciding on a versioning model
+	public DatastreamHistory getDatastreamHistory(@PathParam("pid") final String pid, @PathParam("dsid") final String dsId)
+			throws RepositoryException, IOException {
 
-    /**
-     * Get the datastream profile of a datastream
-     *
-     * @param pid
-     *            persistent identifier of the digital object
-     * @param dsid
-     *            datastream identifier
-     * @return 200
-     * @throws RepositoryException
-     * @throws IOException
-     * @throws TemplateException
-     */
-    @GET
-    @Path("/{dsid}")
-    @Produces({TEXT_XML, APPLICATION_JSON})
-    public DatastreamProfile getDatastream(@PathParam("pid")
-    final String pid, @PathParam("dsid")
-    final String dsId) throws RepositoryException, IOException {
-        logger.trace("Executing getDatastream() with dsId: " + dsId);
-        Datastream ds = DatastreamService.getDatastream(pid, dsId);
-        logger.debug("Retrieved dsNode: " + ds.getNode().getName());
-        return getDSProfile(ds);
+		final Datastream ds = DatastreamService.getDatastream(pid, dsId);
+		final DatastreamHistory dsHistory =
+				new DatastreamHistory(singletonList(getDSProfile(ds)));
+		dsHistory.dsID = dsId;
+		dsHistory.pid = pid;
+		return dsHistory;
+	}
 
-    }
+	/**
+	 * Get previous version information for this datastream. See /{dsid}/versions. Kept for compatibility with fcrepo
+	 * <3.5 API.
+	 * 
+	 * @deprecated
+	 * 
+	 * @param pid
+	 *            persistent identifier of the digital object
+	 * @param dsid
+	 *            datastream identifier
+	 * @return 200
+	 * @throws RepositoryException
+	 * @throws IOException
+	 * @throws TemplateException
+	 */
+	@GET
+	@Path("/{dsid}/history")
+	@Produces(TEXT_XML)
+	@Deprecated
+	public DatastreamHistory getDatastreamHistoryOld(@PathParam("pid") final String pid, @PathParam("dsid") final String dsid)
+			throws RepositoryException, IOException {
+		return getDatastreamHistory(pid, dsid);
+	}
 
-    /**
-     * Get the binary content of a datastream
-     *
-     * @param pid
-     *            persistent identifier of the digital object
-     * @param dsid
-     *            datastream identifier
-     * @return Binary blob
-     * @throws RepositoryException
-     */
-    @GET
-    @Path("/{dsid}/content")
-    public Response getDatastreamContent(@PathParam("pid")
-    final String pid, @PathParam("dsid")
-    final String dsid) throws RepositoryException {
+	/**
+	 * Purge the datastream
+	 * 
+	 * @param pid
+	 *            persistent identifier of the digital object
+	 * @param dsid
+	 *            datastream identifier
+	 * @return 204
+	 * @throws RepositoryException
+	 */
+	@DELETE
+	@Path("/{dsid}")
+	public Response deleteDatastream(@PathParam("pid") String pid, @PathParam("dsid") String dsid) throws RepositoryException {
+		final String dsPath = getDatastreamJcrNodePath(pid, dsid);
+		final Session session = repo.login();
+		final Node ds = session.getNode(dsPath);
+		updateRepositorySize(0L - getDatastreamSize(ds), session);
+		return deleteResource(ds);
+	}
 
-        final Datastream ds = DatastreamService.getDatastream(pid, dsid);
-        return ok(ds.getContent(), ds.getMimeType()).build();
-    }
+	private DatastreamProfile getDSProfile(Datastream ds)
+			throws RepositoryException, IOException {
+		logger.trace("Executing getDSProfile() with node: " + ds.getDsId());
+		final DatastreamProfile dsProfile = new DatastreamProfile();
+		dsProfile.dsID = ds.getDsId();
+		dsProfile.pid = ds.getObject().getName();
+		logger.trace("Retrieved datastream " + ds.getDsId() + "'s parent: " +
+				dsProfile.pid);
+		dsProfile.dsLabel = ds.getLabel();
+		logger.trace("Retrieved datastream " + ds.getDsId() + "'s label: " +
+				ds.getLabel());
+		// TODO when we have a versioning model, use it here
+		dsProfile.dsVersionable = Boolean.toString(false);
+		dsProfile.dsVersionID = ds.getDsId() + ".0";
+		dsProfile.dsState = A;
+		dsProfile.dsControlGroup = M;
+		dsProfile.dsChecksumType = ds.getContentDigestType();
+		dsProfile.dsChecksum = ds.getContentDigest();
+		dsProfile.dsMIME = ds.getMimeType();
+		// TODO do something about format URI, or deprecate it
+		dsProfile.dsFormatURI = URI.create("info:/nothing");
+		dsProfile.dsSize =
+				getNodePropertySize(ds.getNode()) + ds.getContentSize();
+		dsProfile.dsCreateDate =
+				convertDateToXSDString(ds.getCreatedDate().getTime());
+		// TODO what _is_ a dsInfoType?
+		dsProfile.dsInfoType = "";
+		dsProfile.dsLocation = uriInfo.getAbsolutePath().toString();
+		dsProfile.dsLocationType = "URL";
+		return dsProfile;
+	}
 
-    /**
-     * Get previous version information for this datastream
-     *
-     * @param pid
-     *            persistent identifier of the digital object
-     * @param dsId
-     *            datastream identifier
-     * @return 200
-     * @throws RepositoryException
-     * @throws IOException
-     * @throws TemplateException
-     */
-    @GET
-    @Path("/{dsid}/versions")
-    @Produces({TEXT_XML, APPLICATION_JSON})
-    // TODO implement this after deciding on a versioning model
-            public
-            DatastreamHistory getDatastreamHistory(@PathParam("pid")
-            final String pid, @PathParam("dsid")
-            final String dsId) throws RepositoryException, IOException {
+	private String getDSMimeType(Node ds) throws ValueFormatException,
+			PathNotFoundException, RepositoryException, IOException {
+		final Binary b =
+				(Binary) ds.getNode(JCR_CONTENT).getProperty(JCR_DATA)
+						.getBinary();
+		return b.getMimeType();
+	}
 
-        final Datastream ds = DatastreamService.getDatastream(pid, dsId);
-        final DatastreamHistory dsHistory =
-                new DatastreamHistory(singletonList(getDSProfile(ds)));
-        dsHistory.dsID = dsId;
-        dsHistory.pid = pid;
-        return dsHistory;
-    }
+	public static Long getDatastreamSize(Node ds) throws ValueFormatException,
+			PathNotFoundException, RepositoryException {
+		return getNodePropertySize(ds) + getContentSize(ds);
+	}
 
-    /**
-     * Get previous version information for this datastream. See
-     * /{dsid}/versions. Kept for compatibility with fcrepo <3.5 API.
-     *
-     * @deprecated
-     *
-     * @param pid
-     *            persistent identifier of the digital object
-     * @param dsid
-     *            datastream identifier
-     * @return 200
-     * @throws RepositoryException
-     * @throws IOException
-     * @throws TemplateException
-     */
-    @GET
-    @Path("/{dsid}/history")
-    @Produces(TEXT_XML)
-    @Deprecated
-    public DatastreamHistory getDatastreamHistoryOld(@PathParam("pid")
-    final String pid, @PathParam("dsid")
-    final String dsid) throws RepositoryException, IOException {
-        return getDatastreamHistory(pid, dsid);
-    }
-
-    /**
-     * Purge the datastream
-     *
-     * @param pid
-     *            persistent identifier of the digital object
-     * @param dsid
-     *            datastream identifier
-     * @return 204
-     * @throws RepositoryException
-     */
-    @DELETE
-    @Path("/{dsid}")
-    public Response deleteDatastream(@PathParam("pid")
-    String pid, @PathParam("dsid")
-    String dsid) throws RepositoryException {
-        final String dsPath = getDatastreamJcrNodePath(pid, dsid);
-        final Session session = repo.login();
-        final Node ds = session.getNode(dsPath);
-        updateRepositorySize(0L - getDatastreamSize(ds), session);
-        return deleteResource(ds);
-    }
-
-    private DatastreamProfile getDSProfile(Datastream ds)
-            throws RepositoryException, IOException {
-        logger.trace("Executing getDSProfile() with node: " + ds.getDsId());
-        final DatastreamProfile dsProfile = new DatastreamProfile();
-        dsProfile.dsID = ds.getDsId();
-        dsProfile.pid = ds.getObject().getName();
-        logger.trace("Retrieved datastream " + ds.getDsId() + "'s parent: " +
-                dsProfile.pid);
-        dsProfile.dsLabel = ds.getLabel();
-        logger.trace("Retrieved datastream " + ds.getDsId() + "'s label: " +
-                ds.getLabel());
-        // TODO when we have a versioning model, use it here
-        dsProfile.dsVersionable = Boolean.toString(false);
-        dsProfile.dsVersionID = ds.getDsId() + ".0";
-        dsProfile.dsState = A;
-        dsProfile.dsControlGroup = M;
-        dsProfile.dsChecksumType = ds.getContentDigestType();
-        dsProfile.dsChecksum = ds.getContentDigest();
-        dsProfile.dsMIME = ds.getMimeType();
-        // TODO do something about format URI, or deprecate it
-        dsProfile.dsFormatURI = URI.create("info:/nothing");
-        dsProfile.dsSize =
-                getNodePropertySize(ds.getNode()) + ds.getContentSize();
-        dsProfile.dsCreateDate =
-                convertDateToXSDString(ds.getCreatedDate().getTime());
-        // TODO what _is_ a dsInfoType?
-        dsProfile.dsInfoType = "";
-        dsProfile.dsLocation = uriInfo.getAbsolutePath().toString();
-        dsProfile.dsLocationType = "URL";
-        return dsProfile;
-    }
-
-    private String getDSMimeType(Node ds) throws ValueFormatException,
-            PathNotFoundException, RepositoryException, IOException {
-        final Binary b =
-                (Binary) ds.getNode(JCR_CONTENT).getProperty(JCR_DATA)
-                        .getBinary();
-        return b.getMimeType();
-    }
-
-    public static Long getDatastreamSize(Node ds) throws ValueFormatException,
-            PathNotFoundException, RepositoryException {
-        return getNodePropertySize(ds) + getContentSize(ds);
-    }
-
-    public static Long getContentSize(Node ds) throws ValueFormatException,
-            PathNotFoundException, RepositoryException {
-        return ds.getNode(JCR_CONTENT).getProperty(JCR_DATA).getBinary()
-                .getSize();
-    }
+	public static Long getContentSize(Node ds) throws ValueFormatException,
+			PathNotFoundException, RepositoryException {
+		return ds.getNode(JCR_CONTENT).getProperty(JCR_DATA).getBinary()
+				.getSize();
+	}
 
 }
