@@ -14,7 +14,7 @@
 
     <context:annotation-config/>
     
-    <context:component-scan base-package="org.fcrepo.api.legacy" />
+    <context:component-scan base-package="org.fcrepo.api.legacy, org.fcrepo.exceptionhandlers" />
 
     <!-- Mints PIDs-->
     <bean class="org.fcrepo.identifiers.UUIDPidMinter"/>
