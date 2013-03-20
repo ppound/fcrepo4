@@ -155,7 +155,7 @@ public class FedoraDatastreams extends AbstractResource {
 
 				try {
 					final Datastream ds = DatastreamService.getDatastream(pid, dsid);
-						multipart.addPart(ds.getContent(), MediaType.valueOf(ds.getMimeType()));
+					multipart.addPart(ds.getContent(), MediaType.valueOf(ds.getMimeType()));
 				} catch (PathNotFoundException e) {
 
 				}

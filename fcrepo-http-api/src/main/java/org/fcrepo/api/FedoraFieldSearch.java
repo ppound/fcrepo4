@@ -6,6 +6,7 @@ import static javax.ws.rs.core.Response.ok;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.inject.Named;
 import javax.jcr.LoginException;
 import javax.jcr.Node;
 import javax.jcr.NodeIterator;
@@ -31,8 +32,8 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Vincent Nguyen
  */
-
-@Path("/search")
+@Named
+@Path("/rest/search")
 public class FedoraFieldSearch extends AbstractResource {
 	private static final Logger logger = LoggerFactory
             .getLogger(FedoraFieldSearch.class);

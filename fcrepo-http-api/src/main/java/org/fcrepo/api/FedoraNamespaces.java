@@ -10,6 +10,7 @@ import static javax.ws.rs.core.Response.ok;
 import java.io.IOException;
 import java.net.URI;
 
+import javax.inject.Named;
 import javax.jcr.NamespaceRegistry;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
@@ -37,7 +38,8 @@ import com.google.common.collect.ImmutableSet.Builder;
  * @author ajs6f
  * 
  */
-@Path("/namespaces")
+@Named
+@Path("/rest/namespaces")
 public class FedoraNamespaces extends AbstractResource {
 
     /**

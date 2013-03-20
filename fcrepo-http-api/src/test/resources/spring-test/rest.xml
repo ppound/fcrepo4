@@ -10,8 +10,6 @@
     http://cxf.apache.org/jaxrs http://cxf.apache.org/schemas/jaxrs.xsd
     http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
 
-    <import resource="classpath:META-INF/cxf/cxf.xml"/>
-
     <context:property-placeholder/>
 
     <!-- Context that houses JAX-RS Resources that compose the API
@@ -19,39 +17,7 @@
 
     <context:annotation-config/>
 
-    <jaxrs:server address="http://localhost:${test.port:8080}/rest">
-        <jaxrs:serviceBeans>
-            <bean class="org.fcrepo.api.FedoraRepository"/>
-            <bean class="org.fcrepo.api.FedoraDatastreams"/>
-            <bean class="org.fcrepo.api.FedoraIdentifiers"/>
-            <bean class="org.fcrepo.api.FedoraNamespaces"/>
-            <bean class="org.fcrepo.api.FedoraObjects"/>
-            <bean class="org.fcrepo.api.FedoraFieldSearch"/>
-        </jaxrs:serviceBeans>
-        <jaxrs:extensionMappings>
-            <entry key="json" value="application/json"/>
-            <entry key="xml" value="application/xml"/>
-        </jaxrs:extensionMappings>
-        <jaxrs:providers>
-            <bean class="org.fcrepo.exceptionhandlers.PathNotFoundExceptionMapper"/>
-            <bean class="org.fcrepo.exceptionhandlers.AccessControlExceptionMapper"/>
-            <bean class="org.fcrepo.exceptionhandlers.WildcardExceptionMapper">
-                <property name="showStackTrace" value="true"/>
-            </bean>
-            <bean class="org.apache.cxf.jaxrs.provider.JAXBElementProvider">
-                <property name="marshallerProperties">
-                    <util:map>
-                        <entry key="jaxb.formatted.output">
-                            <value type="java.lang.Boolean">true</value>
-                        </entry>
-                    </util:map>
-                </property>
-            </bean>
-            <!--<bean class="org.apache.cxf.jaxrs.provider.json.JSONProvider">
-                <property name="ignoreNamespaces" value="true"/>
-            </bean>-->
-        </jaxrs:providers>
-    </jaxrs:server>
+    <context:component-scan base-package="org.fcrepo.api, org.fcrepo.exceptionhandlers" />
 
     <!-- Mints PIDs-->
     <bean class="org.fcrepo.identifiers.UUIDPidMinter"/>
