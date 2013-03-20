@@ -17,21 +17,6 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.apache.cxf</groupId>
-      <artifactId>cxf-rt-transports-http-jetty</artifactId>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.cxf</groupId>
-      <artifactId>cxf-rt-frontend-jaxrs</artifactId>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.cxf</groupId>
-      <artifactId>cxf-rt-rs-extension-providers</artifactId>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
       <groupId>org.fcrepo</groupId>
       <artifactId>fcrepo-kernel</artifactId>
       <version>${project.version}</version>
@@ -43,19 +28,6 @@
       <version>${project.version}</version>
       <scope>compile</scope>
     </dependency>
-
-    <dependency>
-      <groupId>org.codehaus.enunciate</groupId>
-      <artifactId>enunciate-cxf-rt</artifactId>
-      <version>${enunciate.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>commons-logging</groupId>
-          <artifactId>commons-logging</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
 
     <!-- test gear -->
     <dependency>
@@ -135,10 +107,6 @@
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.enunciate</groupId>
-        <artifactId>maven-enunciate-cxf-plugin</artifactId>
       </plugin>
       <plugin>
       	<groupId>org.apache.maven.plugins</groupId>

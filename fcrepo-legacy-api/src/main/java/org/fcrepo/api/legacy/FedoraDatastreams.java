@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
 
@@ -47,9 +46,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.cxf.jaxrs.ext.multipart.Attachment;
-import org.apache.cxf.jaxrs.ext.multipart.Multipart;
-import org.apache.cxf.jaxrs.ext.multipart.MultipartBody;
 import org.fcrepo.AbstractResource;
 import org.fcrepo.Datastream;
 import org.fcrepo.exception.InvalidChecksumException;
@@ -60,7 +56,7 @@ import org.fcrepo.jaxb.responses.management.DatastreamProfile;
 import org.fcrepo.services.DatastreamService;
 import org.jboss.resteasy.plugins.providers.multipart.InputPart;
 import org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataInput;
-import org.jboss.resteasy.plugins.providers.multipart.MultipartInput;
+import org.jboss.resteasy.plugins.providers.multipart.MultipartOutput;
 import org.modeshape.jcr.api.Binary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -139,7 +135,7 @@ public class FedoraDatastreams extends AbstractResource {
 	@GET
 	@Path("/__content__")
 	@Produces("multipart/mixed")
-	public MultipartBody getDatastreamsContents(@PathParam("pid") final String pid, @QueryParam("dsid") List<String> dsids)
+	public MultipartOutput getDatastreamsContents(@PathParam("pid") final String pid, @QueryParam("dsid") List<String> dsids)
 			throws RepositoryException, IOException {
 
 		final Session session = repo.login();
@@ -151,17 +147,15 @@ public class FedoraDatastreams extends AbstractResource {
 			}
 		}
 
-		List<Attachment> atts = new LinkedList<Attachment>();
+		MultipartOutput multipart = new MultipartOutput();
 		try {
 			Iterator<String> i = dsids.iterator();
 			while (i.hasNext()) {
 				final String dsid = i.next();
 
 				try {
-					final Datastream ds =
-							DatastreamService.getDatastream(pid, dsid);
-					atts.add(new Attachment(ds.getNode().getName(), ds
-							.getMimeType(), ds.getContent()));
+					final Datastream ds = DatastreamService.getDatastream(pid, dsid);
+						multipart.addPart(ds.getContent(), MediaType.valueOf(ds.getMimeType()));
 				} catch (PathNotFoundException e) {
 
 				}
@@ -170,7 +164,7 @@ public class FedoraDatastreams extends AbstractResource {
 			session.logout();
 		}
 
-		return new MultipartBody(atts, true);
+		return multipart;
 	}
 
 	/**
@@ -235,10 +229,12 @@ public class FedoraDatastreams extends AbstractResource {
 	@Consumes("multipart/form-data")
 	@Path("/{dsid}")
 	public Response addDatastream(@PathParam("pid") final String pid, @PathParam("dsid") final String dsid,
-			@HeaderParam("Content-Type") MediaType contentType, @Multipart("file") Attachment file) throws RepositoryException,
+			@HeaderParam("Content-Type") MediaType contentType, MultipartFormDataInput multipart) throws RepositoryException,
 			IOException, InvalidChecksumException {
-		return addDatastream(pid, dsid, file.getContentType(), file
-				.getDataHandler().getInputStream());
+		InputPart filepart = multipart.getFormDataMap().get("file").get(0);
+		MediaType mediaType = filepart.getMediaType();
+		InputStream src = filepart.getBody(InputStream.class, null);
+		return addDatastream(pid, dsid, mediaType, src);
 	}
 
 	/**
@@ -294,12 +290,16 @@ public class FedoraDatastreams extends AbstractResource {
 	@Consumes("multipart/form-data")
 	@Path("/{dsid}")
 	public Response modifyDatastream(@PathParam("pid") final String pid, @PathParam("dsid") final String dsid,
-			@HeaderParam("Content-Type") MediaType contentType, @Multipart("file") Attachment file) throws RepositoryException,
+			@HeaderParam("Content-Type") MediaType contentType,MultipartFormDataInput multipart) throws RepositoryException,
 			IOException, InvalidChecksumException {
-
-		return modifyDatastream(pid, dsid, file.getContentType(), file
-				.getDataHandler().getInputStream());
-
+		InputPart filepart = multipart.getFormDataMap().get("file").get(0);
+		InputStream src = null;
+		try{
+			src = filepart.getBody(InputStream.class, null);
+			return modifyDatastream(pid, dsid, filepart.getMediaType(),src);
+		}finally{
+			IOUtils.closeQuietly(src);
+		}
 	}
 
 	private URI addDatastreamNode(final String pid, final String dsPath,
