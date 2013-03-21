@@ -30,13 +30,19 @@ import org.fcrepo.services.ObjectService;
 import org.fcrepo.utils.FixityResult;
 import org.fcrepo.utils.LowLevelCacheEntry;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.modeshape.jcr.JcrRepositoryFactory;
 import org.modeshape.jcr.api.JcrTools;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration({"/spring-test/repo.xml"})
+@Ignore
 public class SelfHealingIT {
     protected Logger logger;
     static private Repository repo;

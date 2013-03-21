@@ -30,6 +30,17 @@
         </exclusion>
       </exclusions>
     </dependency>
+    <dependency>
+     <groupId>org.jboss.resteasy</groupId>
+     <artifactId>resteasy-jaxrs</artifactId>
+   	 <version>2.3.5.Final</version>
+       <exclusions>
+         <exclusion>
+           <groupId>commons-logging</groupId>
+           <artifactId>commons-logging</artifactId>
+         </exclusion>
+       </exclusions>
+    </dependency>
 
     <!-- test gear -->
     <dependency>
@@ -43,24 +54,18 @@
       <artifactId>junit</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.cxf</groupId>
-      <artifactId>cxf-rt-frontend-jaxrs</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.cxf</groupId>
-      <artifactId>cxf-rt-transports-http-jetty</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.cxf</groupId>
-      <artifactId>cxf-rt-rs-extension-providers</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jboss.resteasy</groupId>
+      <artifactId>resteasy-spring</artifactId>
+      <version>2.3.5.Final</version>
+      <scope>test</scope>
     </dependency>
 
     <!-- This dependency is for compile-time: it keeps this module independent 
@@ -71,6 +76,11 @@
       <groupId>javax</groupId>
       <artifactId>javaee-api</artifactId>
     </dependency>
+    <dependency>
+    	<groupId>ch.qos.logback</groupId>
+    	<artifactId>logback-classic</artifactId>
+    	<scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -80,13 +90,40 @@
         <artifactId>maven-bundle-plugin</artifactId>
       </plugin>
       <plugin>
-        <groupId>org.codehaus.enunciate</groupId>
-        <artifactId>maven-enunciate-cxf-plugin</artifactId>
-      </plugin>
-      <plugin>
       	<groupId>org.apache.maven.plugins</groupId>
       	<artifactId>maven-failsafe-plugin</artifactId>
       </plugin>
+	  <plugin>
+	  	<groupId>org.eclipse.jetty</groupId>
+	  	<artifactId>jetty-maven-plugin</artifactId>
+	  	<version>9.0.0.v20130308</version>
+          <configuration>
+            <contextPath>/</contextPath>
+              <stopPort>8005</stopPort>
+              <stopKey>STOP</stopKey>
+            </configuration>
+            <executions>
+              <execution>
+                <id>start-jetty</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <configuration>
+                  <daemon>true</daemon>
+		          <webAppSourceDirectory>${basedir}/src/test/resources</webAppSourceDirectory>
+		          <useTestClasspath>true</useTestClasspath>
+                </configuration>
+              </execution>
+              <execution>
+                <id>stop-jetty</id>
+                <phase>post-integration-test</phase>
+                <goals>
+                  <goal>stop</goal>
+                </goals>
+              </execution>
+            </executions>
+        </plugin>
     </plugins>
   </build>
 </project>

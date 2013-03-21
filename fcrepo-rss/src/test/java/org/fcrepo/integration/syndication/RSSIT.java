@@ -15,8 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.test.context.ContextConfiguration;
 
-@ContextConfiguration({"/spring-test/repo.xml", "/spring-test/rest.xml",
-        "/spring-test/eventing.xml"})
 public class RSSIT extends AbstractResourceIT {
 
     final private Logger logger = LoggerFactory.getLogger(RSSIT.class);
@@ -25,7 +23,7 @@ public class RSSIT extends AbstractResourceIT {
     public void testRSS() throws Exception {
 
         assertEquals(201, getStatus(new HttpPost(serverAddress +
-                "/objects/RSSTESTPID")));
+                "/v3/objects/RSSTESTPID")));
 
         HttpGet getRSSMethod = new HttpGet(serverAddress + "/rss");
         HttpResponse response = client.execute(getRSSMethod);

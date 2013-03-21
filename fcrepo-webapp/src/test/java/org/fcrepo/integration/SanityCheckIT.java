@@ -20,8 +20,6 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration({"/spring/repo.xml", "/spring/eventing.xml", "/spring/jms.xml", "/spring/generator.xml", "/spring-test/rest.xml"})
 public class SanityCheckIT {
 
     protected Logger logger;

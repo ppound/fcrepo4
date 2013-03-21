@@ -13,7 +13,6 @@ import org.apache.http.util.EntityUtils;
 import org.junit.Test;
 import org.springframework.test.context.ContextConfiguration;
 
-@ContextConfiguration({"/spring-test/generator.xml", "/spring-test/repo.xml"})
 public class DublinCoreGeneratorIT extends AbstractResourceIT {
 
     @Test

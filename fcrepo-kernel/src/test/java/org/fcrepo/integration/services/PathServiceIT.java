@@ -9,7 +9,7 @@ import static org.fcrepo.services.PathService.getObjectJcrNodePath;
 import static org.fcrepo.services.PathService.OBJECT_PATH;
 import static org.junit.Assert.assertEquals;
 
-public class PathServiceTest {
+public class PathServiceIT {
 
     @Test
     public void testGetObjectJcrNodePath() throws Exception {

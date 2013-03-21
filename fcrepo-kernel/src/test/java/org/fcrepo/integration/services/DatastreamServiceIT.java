@@ -20,9 +20,12 @@ import org.apache.tika.io.IOUtils;
 import org.fcrepo.Datastream;
 import org.fcrepo.integration.AbstractIT;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-@ContextConfiguration({"/spring-test/repo.xml"})
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration("/spring-test/repo.xml")
 public class DatastreamServiceIT extends AbstractIT {
 
     @Inject

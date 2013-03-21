@@ -9,6 +9,7 @@ import java.io.ByteArrayOutputStream;
 import java.util.List;
 
 import javax.annotation.Resource;
+import javax.inject.Named;
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import javax.ws.rs.GET;
@@ -23,7 +24,8 @@ import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.RDFWriter;
 
-@Path("/objects/{pid}/rdf")
+@Named
+@Path("/rest/objects/{pid}/rdf")
 public class RdfGenerator {
 
     @Resource

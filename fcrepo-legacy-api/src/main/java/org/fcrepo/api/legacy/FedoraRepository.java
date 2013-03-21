@@ -37,8 +37,8 @@ import com.google.common.collect.ImmutableMap.Builder;
  * @author cabeer
  * @author ajs6f
  */
-@Named
-@Path("/rest")
+@Named("fedoraLegacyRepository")
+@Path("/v3")
 public class FedoraRepository extends AbstractResource {
 
     private static final Logger logger = LoggerFactory

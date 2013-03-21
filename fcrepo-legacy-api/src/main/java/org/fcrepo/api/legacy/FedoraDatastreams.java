@@ -63,8 +63,8 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableSet.Builder;
 
-@Named
-@Path("/rest/objects/{pid}/datastreams")
+@Named("fedoraLegacyDatastreams")
+@Path("/v3/objects/{pid}/datastreams")
 public class FedoraDatastreams extends AbstractResource {
 
 	final private Logger logger = LoggerFactory

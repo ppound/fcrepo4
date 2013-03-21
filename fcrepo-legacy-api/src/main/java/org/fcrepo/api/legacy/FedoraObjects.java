@@ -41,8 +41,8 @@ import org.fcrepo.jaxb.responses.access.ObjectProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Named
-@Path("/rest/objects")
+@Named("fedoraLegacyObjects")
+@Path("/v3/objects")
 public class FedoraObjects extends AbstractResource {
 
     private static final Logger logger = LoggerFactory

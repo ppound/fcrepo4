@@ -18,5 +18,4 @@
 
     <bean class="org.modeshape.jcr.JcrRepositoryFactory"/>
 
-
 </beans>

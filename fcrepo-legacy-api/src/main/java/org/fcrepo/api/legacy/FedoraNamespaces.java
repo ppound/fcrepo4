@@ -38,8 +38,8 @@ import com.google.common.collect.ImmutableSet.Builder;
  * @author ajs6f
  * 
  */
-@Named
-@Path("/rest/namespaces")
+@Named("fedoraLegacyNamespaces")
+@Path("/v3/namespaces")
 public class FedoraNamespaces extends AbstractResource {
 
     /**

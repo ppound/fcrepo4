@@ -12,11 +12,14 @@ import org.fcrepo.observer.FedoraEvent;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 
+@RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration({ "/spring-test/eventing.xml", "/spring-test/repo.xml" })
 public class SimpleObserverIT extends AbstractIT {
 

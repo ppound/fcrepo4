@@ -6,18 +6,25 @@ import static com.google.common.collect.Lists.transform;
 import static org.fcrepo.utils.EventType.getEventType;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.jcr.RepositoryException;
 import javax.jcr.observation.Event;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.StreamingOutput;
 import javax.xml.transform.stream.StreamSource;
 
+import org.apache.commons.io.IOUtils;
 import org.fcrepo.AbstractResource;
 import org.joda.time.DateTime;
 import org.modeshape.common.SystemFailureException;
@@ -34,6 +41,7 @@ import com.sun.syndication.feed.synd.SyndFeedImpl;
 import com.sun.syndication.io.FeedException;
 import com.sun.syndication.io.SyndFeedOutput;
 
+@Named
 @Path("/rss")
 public class RSSPublisher extends AbstractResource {
 
@@ -55,12 +63,20 @@ public class RSSPublisher extends AbstractResource {
 
     @GET
     @Produces("application/rss+xml")
-    public StreamSource getFeed() throws FeedException {
+    public StreamingOutput getFeed() throws FeedException {
         feed.setLink(uriInfo.getBaseUri().toString());
         feed.setEntries(transform(copyOf(feedQueue).reverse(), event2entry));
         // TODO ought to make this stream, not go through a string
-        return new StreamSource(new ByteArrayInputStream(new SyndFeedOutput()
-                .outputString(feed).getBytes()));
+        return new StreamingOutput() {
+			@Override
+			public void write(OutputStream output) throws IOException, WebApplicationException {
+				try {
+					IOUtils.copy(new ByteArrayInputStream(new SyndFeedOutput().outputString(feed).getBytes()), output);
+				} catch (FeedException e) {
+					throw new IOException(e);
+				}
+			}
+		};
     }
 
     private Function<Event, SyndEntry> event2entry =

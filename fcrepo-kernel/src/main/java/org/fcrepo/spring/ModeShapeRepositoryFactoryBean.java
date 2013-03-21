@@ -2,8 +2,11 @@ package org.fcrepo.spring;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
@@ -14,6 +17,8 @@ import org.modeshape.jcr.JcrRepositoryFactory;
 import org.modeshape.jcr.api.JcrTools;
 import org.modeshape.jcr.api.Repository;
 import org.modeshape.jcr.api.RepositoryFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.core.io.Resource;
 
@@ -25,6 +30,9 @@ public class ModeShapeRepositoryFactoryBean implements
 
 	private Resource repositoryConfiguration;
 	private JcrRepository repository;
+	
+	
+	private static final Logger logger = LoggerFactory.getLogger(ModeShapeRepositoryFactoryBean.class);
 
 	@PostConstruct
 	public void buildRepository() throws RepositoryException, IOException {
@@ -34,6 +42,18 @@ public class ModeShapeRepositoryFactoryBean implements
 
 
         setupInitialNodes();
+	}
+	
+	@PreDestroy
+	public void shutdown() throws InterruptedException, ExecutionException{
+		logger.debug("shutting down modeshape factory...");
+		Future<Boolean> stopped = jcrRepositoryFactory.shutdown();
+		while (!stopped.get()){
+			logger.debug("wating 1s for shutdown.");
+			Thread.sleep(1000);
+		}
+		stopped.get();
+		logger.debug("modeshapefactory shutdown complete.");
 	}
 
     private void setupInitialNodes() throws RepositoryException {

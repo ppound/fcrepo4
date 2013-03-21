@@ -26,8 +26,8 @@ import com.google.common.base.Function;
  * @author ajs6f
  * 
  */
-@Named
-@Path("/rest/nextPID")
+@Named("fedoraLegacyIdentifiers")
+@Path("/v3/nextPID")
 public class FedoraIdentifiers extends AbstractResource {
 
     /**
