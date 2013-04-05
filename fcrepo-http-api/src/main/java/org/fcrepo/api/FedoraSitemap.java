@@ -8,6 +8,7 @@ import static org.fcrepo.utils.FedoraJcrTypes.FEDORA_OBJECT;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.query.Query;
@@ -27,6 +28,7 @@ import org.fcrepo.jaxb.responses.sitemap.SitemapUrlSet;
 import org.fcrepo.services.ObjectService;
 import org.slf4j.Logger;
 
+@Named
 @Path("/sitemap")
 public class FedoraSitemap extends AbstractResource {
 

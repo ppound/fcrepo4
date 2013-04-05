@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.jcr.NodeIterator;
 import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
@@ -64,6 +65,7 @@ import org.slf4j.Logger;
 
 import com.google.common.collect.ImmutableSet.Builder;
 
+@Named
 @Path("/rest/objects/{pid}/datastreams")
 public class FedoraDatastreams extends AbstractResource {
 

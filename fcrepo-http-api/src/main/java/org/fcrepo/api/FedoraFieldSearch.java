@@ -7,6 +7,7 @@ import static javax.jcr.query.Query.JCR_SQL2;
 import static javax.ws.rs.core.MediaType.TEXT_HTML;
 import static org.slf4j.LoggerFactory.getLogger;
 
+import javax.inject.Named;
 import javax.jcr.LoginException;
 import javax.jcr.Node;
 import javax.jcr.NodeIterator;
@@ -36,6 +37,7 @@ import com.google.common.collect.ImmutableList;
  * @author Vincent Nguyen
  */
 
+@Named
 @Path("/search")
 public class FedoraFieldSearch extends AbstractResource implements
         FedoraJcrTypes {

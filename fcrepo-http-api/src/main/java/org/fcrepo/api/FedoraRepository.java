@@ -14,6 +14,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 import java.io.IOException;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.jcr.LoginException;
 import javax.jcr.Repository;
 import javax.jcr.RepositoryException;
@@ -41,6 +42,7 @@ import com.google.common.collect.ImmutableMap.Builder;
  * @author ajs6f
  */
 
+@Named
 @Path("/describe")
 public class FedoraRepository extends AbstractResource {
 

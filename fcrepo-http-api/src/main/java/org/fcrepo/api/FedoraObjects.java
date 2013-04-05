@@ -13,6 +13,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 import java.io.IOException;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.ws.rs.DELETE;
@@ -32,6 +33,7 @@ import org.fcrepo.jaxb.responses.access.ObjectProfile;
 import org.fcrepo.services.ObjectService;
 import org.slf4j.Logger;
 
+@Named
 @Path("/objects")
 public class FedoraObjects extends AbstractResource {
 

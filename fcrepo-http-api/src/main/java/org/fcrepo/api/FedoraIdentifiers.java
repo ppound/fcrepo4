@@ -10,6 +10,7 @@ import static javax.ws.rs.core.MediaType.TEXT_XML;
 
 import java.io.IOException;
 
+import javax.inject.Named;
 import javax.jcr.RepositoryException;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.POST;
@@ -26,6 +27,7 @@ import org.fcrepo.jaxb.responses.management.NextPid;
  * @author ajs6f
  * 
  */
+@Named
 @Path("nextPID")
 public class FedoraIdentifiers extends AbstractResource {
 
