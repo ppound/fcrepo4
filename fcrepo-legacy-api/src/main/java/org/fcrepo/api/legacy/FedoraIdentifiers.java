@@ -8,6 +8,7 @@ import static com.google.common.collect.Ranges.closed;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.TEXT_XML;
 
+import javax.inject.Named;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -25,7 +26,8 @@ import com.google.common.base.Function;
  * @author ajs6f
  * 
  */
-@Path("nextPID")
+@Named
+@Path("/v3/nextPID")
 public class FedoraIdentifiers extends AbstractResource {
 
     /**

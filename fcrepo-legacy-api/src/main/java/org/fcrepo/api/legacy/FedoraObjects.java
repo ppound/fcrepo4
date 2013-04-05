@@ -18,6 +18,7 @@ import static org.fcrepo.utils.FedoraTypesUtils.value2string;
 import java.io.IOException;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.jcr.Node;
 import javax.jcr.NodeIterator;
 import javax.jcr.Property;
@@ -40,7 +41,8 @@ import org.fcrepo.services.ObjectService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Path("/objects")
+@Named
+@Path("/v3/objects")
 public class FedoraObjects extends AbstractResource {
 
     private static final Logger logger = LoggerFactory

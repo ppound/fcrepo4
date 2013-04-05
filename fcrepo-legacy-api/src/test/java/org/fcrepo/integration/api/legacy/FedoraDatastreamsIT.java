@@ -273,6 +273,7 @@ public class FedoraDatastreamsIT extends AbstractResourceIT {
         final HttpPost post =
                 new HttpPost(serverAddress +
                         "objects/FedoraDatastreamsTest9/datastreams/");
+        logger.debug("posting multipart entity to " + post.getURI().toASCIIString());
 
         MultipartEntity multiPartEntity = new MultipartEntity();
         multiPartEntity.addPart("ds1", new StringBody("asdfg"));
