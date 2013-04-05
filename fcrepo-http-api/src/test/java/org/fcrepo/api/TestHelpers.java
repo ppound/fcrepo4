@@ -4,11 +4,16 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Type;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.jcr.NamespaceRegistry;
 import javax.jcr.Node;
@@ -22,15 +27,22 @@ import javax.jcr.nodetype.NodeTypeIterator;
 import javax.jcr.query.Query;
 import javax.jcr.query.QueryManager;
 import javax.jcr.query.QueryResult;
+import javax.mail.internet.ContentDisposition;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.PathSegment;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
-import org.apache.cxf.jaxrs.ext.multipart.Attachment;
-import org.apache.cxf.jaxrs.ext.multipart.ContentDisposition;
+import org.apache.commons.httpclient.methods.multipart.StringPart;
+import org.apache.poi.hmef.Attachment;
 import org.apache.tika.io.IOUtils;
+import org.jboss.resteasy.plugins.providers.multipart.InputPart;
+import org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataInput;
+import org.jboss.resteasy.plugins.providers.multipart.MultipartOutput;
 import org.jboss.resteasy.specimpl.PathSegmentImpl;
 import org.jboss.resteasy.specimpl.UriInfoImpl;
+import org.jboss.resteasy.util.GenericType;
 import org.modeshape.jcr.api.Repository;
 import org.modeshape.jcr.api.nodetype.NodeTypeManager;
 
@@ -50,18 +62,107 @@ public abstract class TestHelpers {
         return new UriInfoImpl(absolutePath, baseURI, "/" + relativeUri.getRawPath(), absoluteURI.getRawQuery(), encodedPathSegments);
     }
     
-    public static List<Attachment> getStringsAsAttachments(Map<String, String> contents) {
-    	List<Attachment> results = new ArrayList<Attachment>(contents.size());
-    	for (String id:contents.keySet()) {
-    		String content = contents.get(id);
-    		InputStream contentStream = IOUtils.toInputStream(content);
-    		ContentDisposition cd =
-    				new ContentDisposition("form-data;name=" + id + ";filename=" + id + ".txt");
-    		Attachment a = new Attachment(id, contentStream, cd);
-    		results.add(a);
+//    public static List<Attachment> getStringsAsAttachments(Map<String, String> contents) {
+//    	List<Attachment> results = new ArrayList<Attachment>(contents.size());
+//    	for (String id:contents.keySet()) {
+//    		String content = contents.get(id);
+//    		InputStream contentStream = IOUtils.toInputStream(content);
+//    		ContentDisposition cd =
+//    				new ContentDisposition("form-data;name=" + id + ";filename=" + id + ".txt");
+//    		Attachment a = new Attachment(id, contentStream, cd);
+//    		results.add(a);
+//    	}
+//    	return results;
+//    }
+
+    public static MultipartFormDataInput getStringAsMultipart(HashMap<String, String> atts) {
+    	final Map<String,List<InputPart>> parts = new HashMap<>();
+    	
+    	for (final Entry<String, String> e: atts.entrySet()){
+    		InputPart p = new InputPart() {
+				
+				@Override
+				public void setMediaType(MediaType mediaType) {
+				}
+				
+				@Override
+				public boolean isContentTypeFromMessage() {
+					return false;
+				}
+				
+				@Override
+				public MediaType getMediaType() {
+					return MediaType.TEXT_PLAIN_TYPE;
+				}
+				
+				@Override
+				public MultivaluedMap<String, String> getHeaders() {
+					return null;
+				}
+				
+				@Override
+				public String getBodyAsString() throws IOException {
+					return null;
+				}
+				
+				@Override
+				public <T> T getBody(Class<T> type, Type genericType) throws IOException {
+					if (type == InputStream.class){
+						return (T) org.apache.commons.io.IOUtils.toInputStream(e.getValue());
+					}else {
+						throw new IOException("Not implemented for tests");
+					}
+				}
+				
+				@Override
+				public <T> T getBody(GenericType<T> type) throws IOException {
+					return null;
+				}
+			};
+    		parts.put(e.getKey(),Arrays.asList(p));
     	}
-    	return results;
+    	
+    	MultipartFormDataInput m = new MultipartFormDataInput() {
+    		
+			@Override
+			public String getPreamble() {
+				return null;
+			}
+			
+			@Override
+			public List<InputPart> getParts() {
+				return null;
+			}
+			
+			@Override
+			public void close() {
+				
+			}
+			
+			@Override
+			public <T> T getFormDataPart(String key, Class<T> rawType, Type genericType) throws IOException {
+				return null;
+			}
+			
+			@Override
+			public <T> T getFormDataPart(String key, GenericType<T> type) throws IOException {
+				return null;
+			}
+			
+			@Override
+			public Map<String, List<InputPart>> getFormDataMap() {
+				return parts;
+			}
+			
+			@Override
+			@Deprecated
+			public Map<String, InputPart> getFormData() {
+				return null;
+			}
+		};
+		return m;
     }
+
     
     @SuppressWarnings("unchecked")
     public static Query getQueryMock() {
