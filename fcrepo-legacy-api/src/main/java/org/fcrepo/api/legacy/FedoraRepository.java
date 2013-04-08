@@ -39,7 +39,7 @@ import com.google.common.collect.ImmutableMap.Builder;
  * @author ajs6f
  */
 
-@Named
+@Named("legacyFedoraRepository")
 @Path("/v3")
 public class FedoraRepository extends AbstractResource {
 

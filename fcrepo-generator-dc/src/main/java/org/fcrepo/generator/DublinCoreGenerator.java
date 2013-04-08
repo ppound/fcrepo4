@@ -9,6 +9,7 @@ import java.util.List;
 
 import javax.annotation.Resource;
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.jcr.Node;
 import javax.jcr.PathNotFoundException;
 import javax.jcr.RepositoryException;
@@ -22,7 +23,8 @@ import org.fcrepo.AbstractResource;
 import org.fcrepo.generator.dublincore.DCGenerator;
 import org.fcrepo.services.ObjectService;
 
-@Path("/objects/{pid}/oai_dc")
+@Named
+@Path("/rest/objects/{pid}/oai_dc")
 public class DublinCoreGenerator extends AbstractResource {
 
     @Resource

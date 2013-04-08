@@ -29,7 +29,7 @@ import org.fcrepo.services.ObjectService;
 import org.slf4j.Logger;
 
 @Named
-@Path("/sitemap")
+@Path("/rest/sitemap")
 public class FedoraSitemap extends AbstractResource {
 
     private static final Logger logger = getLogger(FedoraSitemap.class);

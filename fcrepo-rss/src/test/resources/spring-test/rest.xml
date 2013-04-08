@@ -10,23 +10,13 @@
     http://cxf.apache.org/jaxrs http://cxf.apache.org/schemas/jaxrs.xsd
     http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
 
-    <import resource="classpath:META-INF/cxf/cxf.xml"/>
-
     <context:property-placeholder/>
-
-    <!-- Context that houses JAX-RS Resources that compose the API
-        as well as some utility gear. -->
 
     <context:annotation-config/>
     
+    <context:component-scan base-package="org.fcrepo.syndication,org.fcrepo.api.legacy" />
+    
     <bean class="org.fcrepo.session.SessionFactory" />
-
-    <jaxrs:server address="http://localhost:${test.port:8080}">
-        <jaxrs:serviceBeans>
-            <bean class="org.fcrepo.api.legacy.FedoraObjects"/>
-            <bean class="org.fcrepo.syndication.RSSPublisher"/>
-        </jaxrs:serviceBeans>
-    </jaxrs:server>
 
     <!-- Mints PIDs-->
     <bean class="org.fcrepo.identifiers.UUIDPidMinter"/>

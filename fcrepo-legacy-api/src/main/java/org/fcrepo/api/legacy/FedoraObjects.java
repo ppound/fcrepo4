@@ -41,7 +41,7 @@ import org.fcrepo.services.ObjectService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Named
+@Named("legacyFedoraObjects")
 @Path("/v3/objects")
 public class FedoraObjects extends AbstractResource {
 

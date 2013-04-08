@@ -43,7 +43,7 @@ import com.google.common.collect.ImmutableMap.Builder;
  */
 
 @Named
-@Path("/describe")
+@Path("/rest/describe")
 public class FedoraRepository extends AbstractResource {
 
     private static final Logger logger = getLogger(FedoraRepository.class);

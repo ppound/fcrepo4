@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.List;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.jcr.NamespaceRegistry;
 import javax.jcr.RepositoryException;
 import javax.ws.rs.DefaultValue;
@@ -33,7 +34,8 @@ import org.openrdf.sail.memory.model.MemValueFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Path("/objects/{pid}/rdf")
+@Named
+@Path("/rest/objects/{pid}/rdf")
 @Produces({TEXT_XML, "text/turtle", TEXT_PLAIN})
 public class ObjectRdfGenerator extends AbstractResource {
 

@@ -34,7 +34,7 @@ import org.fcrepo.services.ObjectService;
 import org.slf4j.Logger;
 
 @Named
-@Path("/objects")
+@Path("/rest/objects")
 public class FedoraObjects extends AbstractResource {
 
     private static final Logger logger = getLogger(FedoraObjects.class);

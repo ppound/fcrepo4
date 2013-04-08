@@ -28,7 +28,7 @@ import org.fcrepo.jaxb.responses.management.NextPid;
  * 
  */
 @Named
-@Path("nextPID")
+@Path("/rest/nextPID")
 public class FedoraIdentifiers extends AbstractResource {
 
     /**

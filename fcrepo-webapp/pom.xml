@@ -54,6 +54,35 @@
       <version>${project.version}</version>
       <scope>compile</scope>
     </dependency>
+    <!-- RESTEasy -->
+    <dependency>
+      <groupId>org.jboss.resteasy</groupId>
+      <artifactId>resteasy-jaxrs</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.jboss.resteasy</groupId>
+      <artifactId>resteasy-jaxb-provider</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.jboss.resteasy</groupId>
+      <artifactId>resteasy-spring</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jboss.resteasy</groupId>
+      <artifactId>resteasy-multipart-provider</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.modeshape</groupId>
       <artifactId>modeshape-web-jcr-rest</artifactId>
@@ -64,21 +93,6 @@
           <artifactId>commons-logging</artifactId>
         </exclusion>
       </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.cxf</groupId>
-      <artifactId>cxf-rt-transports-http-jetty</artifactId>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.cxf</groupId>
-      <artifactId>cxf-rt-frontend-jaxrs</artifactId>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.cxf</groupId>
-      <artifactId>cxf-rt-rs-extension-providers</artifactId>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -94,13 +108,13 @@
         <artifactId>maven-war-plugin</artifactId>
       </plugin>
       <plugin>
-      	<groupId>org.apache.maven.plugins</groupId>
-      	<artifactId>maven-failsafe-plugin</artifactId>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
       </plugin>
       <plugin>
-        <groupId>org.mortbay.jetty</groupId>
+        <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-maven-plugin</artifactId>
-        <version>8.1.9.v20130131</version>
+        <version>9.0.0.v20130308</version>
         <configuration>
           <scanIntervalSeconds>2</scanIntervalSeconds>
           <webApp>
@@ -112,7 +126,25 @@
               <config>${project.build.directory}/test-classes/jetty-users.properties</config>
             </loginService>
           </loginServices>
+          <contextPath>/</contextPath>
+          <stopPort>8005</stopPort>
+          <stopKey>STOP</stopKey>
+          <webAppSourceDirectory>${project.build.directory}/test-classes</webAppSourceDirectory>
+          <useTestClasspath>true</useTestClasspath>
+          <useTestScope>true</useTestScope>
         </configuration>
+        <executions>
+          <execution>
+            <id>start-jetty</id>
+            <phase>pre-integration-test</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <daemon>true</daemon>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

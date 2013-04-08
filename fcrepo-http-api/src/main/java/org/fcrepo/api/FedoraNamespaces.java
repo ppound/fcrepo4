@@ -38,7 +38,7 @@ import com.google.common.collect.ImmutableSet.Builder;
  * 
  */
 @Named
-@Path("/namespaces")
+@Path("/rest/namespaces")
 public class FedoraNamespaces extends AbstractResource {
 
     /**

@@ -15,8 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.test.context.ContextConfiguration;
 
-@ContextConfiguration({"/spring-test/repo.xml", "/spring-test/rest.xml",
-        "/spring-test/eventing.xml"})
 public class RSSIT extends AbstractResourceIT {
 
     final private Logger logger = LoggerFactory.getLogger(RSSIT.class);

@@ -14,6 +14,10 @@ import javax.ws.rs.ext.Provider;
 public class WildcardExceptionMapper implements ExceptionMapper<Exception> {
 
     Boolean showStackTrace;
+    
+    public WildcardExceptionMapper() {
+    		showStackTrace = Boolean.valueOf(System.getProperty("fcrepo.webapp.showstacktrace", "false"));
+	}
 
     @Override
     public Response toResponse(Exception e) {
