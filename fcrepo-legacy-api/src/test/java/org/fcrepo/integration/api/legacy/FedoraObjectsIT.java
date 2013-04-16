@@ -20,9 +20,16 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.util.EntityUtils;
 import org.custommonkey.xmlunit.jaxp13.Validator;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration("/spring-test/test-container.xml")
 public class FedoraObjectsIT extends AbstractResourceIT {
-
+	
     @Test
     public void testIngest() throws Exception {
         final HttpPost method = postObjMethod("FedoraObjectsTest1");

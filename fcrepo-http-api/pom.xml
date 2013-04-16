@@ -138,7 +138,7 @@
             <id>start-jetty</id>
             <phase>pre-integration-test</phase>
             <goals>
-              <goal>start</goal>
+              <goal>run</goal>
             </goals>
             <configuration>
               <daemon>true</daemon>
@@ -152,7 +152,7 @@
           </execution>
           <execution>
             <id>stop-jetty</id>
-            <phase>pre-integration-test</phase>
+            <phase>post-integration-test</phase>
             <goals>
               <goal>stop</goal>
             </goals>

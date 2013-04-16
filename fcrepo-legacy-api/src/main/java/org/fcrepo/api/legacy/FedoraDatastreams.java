@@ -21,13 +21,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map.Entry;
 
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.jcr.ItemNotFoundException;
 import javax.jcr.Node;
 import javax.jcr.NodeIterator;
 import javax.jcr.PathNotFoundException;
@@ -57,26 +52,28 @@ import org.fcrepo.jaxb.responses.management.DatastreamHistory;
 import org.fcrepo.jaxb.responses.management.DatastreamProfile;
 import org.fcrepo.services.DatastreamService;
 import org.fcrepo.services.ObjectService;
-import org.jboss.resteasy.plugins.providers.multipart.InputPart;
-import org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataInput;
-import org.jboss.resteasy.plugins.providers.multipart.MultipartOutput;
 import org.modeshape.jcr.api.Binary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.google.common.collect.ImmutableSet.Builder;
+import com.sun.jersey.core.header.FormDataContentDisposition;
+import com.sun.jersey.multipart.BodyPart;
+import com.sun.jersey.multipart.FormDataParam;
+import com.sun.jersey.multipart.MultiPart;
+import com.sun.jersey.multipart.MultiPartMediaTypes;
 
-@Named("legacyFedoraDatastreams")
 @Path("/v3/objects/{pid}/datastreams")
 public class FedoraDatastreams extends AbstractResource {
 
 	final private Logger logger = LoggerFactory
 			.getLogger(FedoraDatastreams.class);
 
-	@Inject
+	@Autowired
 	ObjectService objectService;
 
-	@Inject
+	@Autowired
 	DatastreamService datastreamService;
 
 	/**
@@ -111,18 +108,18 @@ public class FedoraDatastreams extends AbstractResource {
 
 	@POST
 	@Path("/")
-	public Response addDatastreams(@PathParam("pid") final String pid, final MultipartFormDataInput multipart)
+	public Response addDatastreams(@PathParam("pid") final String pid, final MultiPart multipart)
 			throws RepositoryException, IOException, InvalidChecksumException {
 
 		final Session session = getAuthenticatedSession();
 		InputStream src = null;
 		try {
 			long oldObjectSize = getObjectSize(session.getNode(getObjectJcrNodePath(pid)));
-			for (Entry<String, List<InputPart>> parts : multipart.getFormDataMap().entrySet()) {
-				final String dsid = parts.getKey();
+			for (BodyPart part : multipart.getBodyParts()) {
+				final String dsid = pid;
 				final String dsPath = getDatastreamJcrNodePath(pid, dsid);
-				src = parts.getValue().get(0).getBody(InputStream.class, null);
-				datastreamService.createDatastreamNode(session, dsPath, parts.getValue().get(0).getMediaType().toString(), src);
+				src = part.getEntityAs(InputStream.class);
+				datastreamService.createDatastreamNode(session, dsPath, part.getMediaType().toString(), src);
 			}
 			session.save();
 
@@ -144,7 +141,7 @@ public class FedoraDatastreams extends AbstractResource {
 	@GET
 	@Path("/__content__")
 	@Produces("multipart/mixed")
-	public MultipartOutput getDatastreamsContents(@PathParam("pid") final String pid, @QueryParam("dsid") List<String> dsids)
+	public Response getDatastreamsContents(@PathParam("pid") final String pid, @QueryParam("dsid") List<String> dsids)
 			throws RepositoryException, IOException {
 
 		final Session session = getAuthenticatedSession();
@@ -156,7 +153,7 @@ public class FedoraDatastreams extends AbstractResource {
 			}
 		}
 
-		MultipartOutput multipart = new MultipartOutput();
+		MultiPart multipart = new MultiPart();
 		try {
 			Iterator<String> i = dsids.iterator();
 			while (i.hasNext()) {
@@ -164,7 +161,7 @@ public class FedoraDatastreams extends AbstractResource {
 
 				try {
 					final Datastream ds = datastreamService.getDatastream(pid, dsid);
-					multipart.addPart(ds.getContent(), MediaType.valueOf(ds.getMimeType()));
+					multipart.bodyPart(ds.getContent(), MediaType.valueOf(ds.getMimeType()));
 				} catch (PathNotFoundException e) {
 
 				}
@@ -172,7 +169,7 @@ public class FedoraDatastreams extends AbstractResource {
 		} finally {
 			session.logout();
 		}
-		return multipart;
+		return Response.ok(multipart, MultiPartMediaTypes.MULTIPART_MIXED_TYPE).build();
 	}
 
 	/**
@@ -237,11 +234,10 @@ public class FedoraDatastreams extends AbstractResource {
 	@Consumes("multipart/form-data")
 	@Path("/{dsid}")
 	public Response addDatastream(@PathParam("pid") final String pid, @PathParam("dsid") final String dsid,
-			@HeaderParam("Content-Type") MediaType contentType, MultipartFormDataInput multipart) throws RepositoryException, IOException,
+			@HeaderParam("Content-Type") MediaType contentType, @FormDataParam("file") FormDataContentDisposition fileDetail,
+			@FormDataParam("file") InputStream src) throws RepositoryException, IOException,
 			InvalidChecksumException {
-		InputPart filepart = multipart.getFormDataMap().get("file").get(0);
-		MediaType mediaType = filepart.getMediaType();
-		InputStream src = filepart.getBody(InputStream.class, null);
+		MediaType mediaType = MediaType.valueOf(fileDetail.getParameters().get("Content-Type"));
 		return addDatastream(pid, dsid, mediaType, src);
 	}
 
@@ -297,18 +293,11 @@ public class FedoraDatastreams extends AbstractResource {
 	@PUT
 	@Consumes("multipart/form-data")
 	@Path("/{dsid}")
-	public Response modifyDatastream(@PathParam("pid") final String pid, @PathParam("dsid") final String dsid,
-			@HeaderParam("Content-Type") MediaType contentType,MultipartFormDataInput multipart) throws RepositoryException,
+	public Response modifyDatastreamMultipart(@PathParam("pid") final String pid, @PathParam("dsid") final String dsid,
+			@HeaderParam("Content-Type") MediaType contentType, @FormDataParam("file") InputStream src) throws RepositoryException,
 			IOException,
 			InvalidChecksumException {
-		InputPart filepart = multipart.getFormDataMap().get("file").get(0);
-		InputStream src = null;
-		try{
-			src = filepart.getBody(InputStream.class, null);
-			return modifyDatastream(pid, dsid, filepart.getMediaType(),src);
-		}finally{
-			IOUtils.closeQuietly(src);
-		}
+		return modifyDatastream(pid, dsid, contentType, src);
 
 	}
 

@@ -11,12 +11,14 @@
     <!-- Context that houses JAX-RS Resources that compose the API
         as well as some utility gear. -->
 
-    <context:annotation-config/>
-    
-    <context:component-scan base-package="org.fcrepo.api.legacy,org.fcrepo.exceptionhandlers" />
     
     <bean class="org.fcrepo.session.SessionFactory" />
     
     <!-- Mints PIDs-->
     <bean class="org.fcrepo.identifiers.UUIDPidMinter"/>
+    
+    <context:annotation-config />
+    
+    <context:component-scan base-package="org.fcrepo.api.legacy,org.fcrepo.exceptionhandlers" annotation-config="true"/>
+
 </beans>

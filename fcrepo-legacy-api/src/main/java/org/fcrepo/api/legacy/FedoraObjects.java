@@ -33,6 +33,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.ext.Provider;
 
 import org.fcrepo.AbstractResource;
 import org.fcrepo.FedoraObject;
@@ -40,15 +41,18 @@ import org.fcrepo.jaxb.responses.access.ObjectProfile;
 import org.fcrepo.services.ObjectService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
-@Named("legacyFedoraObjects")
 @Path("/v3/objects")
+@Component("org.fcrepo.api.legacy.FedoraObjects")
 public class FedoraObjects extends AbstractResource {
 
     private static final Logger logger = LoggerFactory
             .getLogger(FedoraObjects.class);
     
-    @Inject
+    @Autowired
     ObjectService objectService;
 
     /**

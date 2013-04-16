@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+  
+  <bean id="containerWrapper" class="org.fcrepo.integration.util.ContainerWrapper" init-method="start" destroy-method="stop" >
+    <property name="port" value="8080"/>
+    <property name="resources">
+      <list>
+        <value>org.fcrepo.api.legacy.FedoraDatastreams</value>
+        <value>org.fcrepo.api.legacy.FedoraIdentifiers</value>
+        <value>org.fcrepo.api.legacy.FedoraNamespaces</value>
+        <value>org.fcrepo.api.legacy.FedoraObjects</value>
+        <value>org.fcrepo.api.legacy.FedoraRepository</value>
+      </list>
+    </property>
+  </bean>
+  
+</beans>

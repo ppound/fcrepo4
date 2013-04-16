@@ -9,7 +9,6 @@ import static org.fcrepo.services.PathService.OBJECT_PATH;
 
 import java.io.IOException;
 
-import javax.inject.Inject;
 import javax.inject.Named;
 import javax.jcr.LoginException;
 import javax.jcr.NamespaceRegistry;
@@ -30,6 +29,8 @@ import org.fcrepo.jaxb.responses.access.DescribeRepository;
 import org.modeshape.jcr.api.nodetype.NodeTypeManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import com.google.common.collect.ImmutableMap.Builder;
 
@@ -39,14 +40,13 @@ import com.google.common.collect.ImmutableMap.Builder;
  * @author ajs6f
  */
 
-@Named("legacyFedoraRepository")
 @Path("/v3")
 public class FedoraRepository extends AbstractResource {
 
     private static final Logger logger = LoggerFactory
             .getLogger(FedoraRepository.class);
     
-    @Inject
+    @Autowired
     Repository repo;
 
     @GET
