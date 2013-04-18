@@ -51,7 +51,7 @@ public class RepositoryService extends JcrTools implements FedoraJcrTypes {
         return metrics;
     }
 
-    public static void dumpMetrics(PrintStream os) {
+    public static void dumpMetrics(final PrintStream os) {
         RegistryService.dumpMetrics(os);
     }
 
@@ -67,7 +67,7 @@ public class RepositoryService extends JcrTools implements FedoraJcrTypes {
      * @throws PathNotFoundException
      * @throws RepositoryException
      */
-    public void updateRepositorySize(Long change, Session session)
+    public void updateRepositorySize(final Long change, final Session session)
             throws PathNotFoundException, RepositoryException {
         try {
             logger.debug("updateRepositorySize called with change quantity: " +
@@ -75,16 +75,16 @@ public class RepositoryService extends JcrTools implements FedoraJcrTypes {
 
             final Node objectStore = findOrCreateNode(session, "/objects");
 
-            Property sizeProperty = objectStore.getProperty(FEDORA_SIZE);
+            final Property sizeProperty = objectStore.getProperty(FEDORA_SIZE);
 
-            Long previousSize = sizeProperty.getLong();
+            final Long previousSize = sizeProperty.getLong();
             logger.debug("Previous repository size: " + previousSize);
             synchronized (sizeProperty) {
                 sizeProperty.setValue(previousSize + change);
                 session.save();
             }
             logger.debug("Current repository size: " + sizeProperty.getLong());
-        } catch (RepositoryException e) {
+        } catch (final RepositoryException e) {
             logger.warn(e.toString());
             throw e;
         }
@@ -98,7 +98,7 @@ public class RepositoryService extends JcrTools implements FedoraJcrTypes {
     public long getAllObjectsDatastreamSize() throws RepositoryException {
 
         long sum = 0;
-        QueryManager queryManager =
+        final QueryManager queryManager =
                 readOnlySession.getWorkspace().getQueryManager();
 
         final String querystring =
@@ -116,37 +116,37 @@ public class RepositoryService extends JcrTools implements FedoraJcrTypes {
         return sum;
     }
 
-    public Long getRepositorySize(Session session) {
+    public Long getRepositorySize(final Session session) {
         try {
             return getAllObjectsDatastreamSize();
-        } catch (RepositoryException e) {
+        } catch (final RepositoryException e) {
             logger.warn(e.toString());
             return -1L;
         }
     }
 
-    public Long getRepositoryObjectCount(Session session) {
+    public Long getRepositoryObjectCount(final Session session) {
         try {
             return session.getNode("/objects").getNodes().getSize();
-        } catch (RepositoryException e) {
+        } catch (final RepositoryException e) {
             logger.warn(e.toString());
             return -1L;
         }
     }
 
-    public NodeTypeIterator getAllNodeTypes(Session session)
+    public NodeTypeIterator getAllNodeTypes(final Session session)
             throws RepositoryException {
         final NodeTypeManager ntmanager =
                 (NodeTypeManager) session.getWorkspace().getNodeTypeManager();
         return ntmanager.getAllNodeTypes();
     }
 
-    public Map<String, String> getRepositoryNamespaces(Session session)
+    public Map<String, String> getRepositoryNamespaces(final Session session)
             throws RepositoryException {
         final NamespaceRegistry reg =
                 session.getWorkspace().getNamespaceRegistry();
-        String[] prefixes = reg.getPrefixes();
-        HashMap<String, String> result =
+        final String[] prefixes = reg.getPrefixes();
+        final HashMap<String, String> result =
                 new HashMap<String, String>(prefixes.length);
         for (final String prefix : reg.getPrefixes()) {
             result.put(prefix, reg.getURI(prefix));
@@ -158,7 +158,7 @@ public class RepositoryService extends JcrTools implements FedoraJcrTypes {
     public final void getSession() {
         try {
             readOnlySession = repo.login();
-        } catch (RepositoryException e) {
+        } catch (final RepositoryException e) {
             throw new IllegalStateException(e);
         }
     }
@@ -168,7 +168,7 @@ public class RepositoryService extends JcrTools implements FedoraJcrTypes {
         readOnlySession.logout();
     }
 
-    public void setRepository(Repository repository) {
+    public void setRepository(final Repository repository) {
         if (readOnlySession != null) {
             logoutSession();
         }
